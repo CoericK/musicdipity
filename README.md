@@ -9,9 +9,7 @@ Music connects us even when we can’t physically be together.
 
 **Serendipity**
 *noun*
-the occurrence and development of events by chance in a happy or beneficial way
-
-- [Oxford Dictionary](http://english.oxforddictionaries.com/serendipity)
+the occurrence and development of events by chance in a happy or beneficial way - [Oxford Dictionary](http://english.oxforddictionaries.com/serendipity)
 
 ### Team members:
 
