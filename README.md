@@ -11,7 +11,7 @@ Music connects us even when we can’t physically be together.
 *noun*
 the occurrence and development of events by chance in a happy or beneficial way - [Oxford Dictionary](http://english.oxforddictionaries.com/serendipity)
 
-![concept gif](https://raw.githubusercontent.com/dtran320/musicdipity/master/Musicdipity.gif)
+![Musicdipity concept gif](static/images/Musicdipity.gif?raw=true "Musicdipity")
 
 ### Team members:
 
