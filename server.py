@@ -26,13 +26,7 @@ app = Flask(__name__)
 SCOPE = "user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state"
 
 
-@app.route("/", methods=["GET"])
-def index():
-    return render_template('index.html')
-
-
-@app.route("/oauth/", methods=["GET"])
-def oauth():
+def get_sp_oauth():
     client_id = os.getenv("SPOTIPY_CLIENT_ID")
     client_secret = os.getenv("SPOTIPY_CLIENT_SECRET")
     redirect_uri = os.getenv("SPOTIPY_REDIRECT_URI")
@@ -43,6 +37,16 @@ def oauth():
         redirect_uri=redirect_uri,
         scope=SCOPE
     )
+    return sp_oauth
+
+@app.route("/", methods=["GET"])
+def index():
+    return render_template('index.html')
+
+
+@app.route("/oauth/", methods=["GET"])
+def oauth():
+    sp_oauth = get_sp_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
     
@@ -51,8 +55,13 @@ def oauth():
 @app.route("/callback/", methods=["GET"])
 def oauth_callback():
     code = request.values.get("code")
-    token_info = sp_oauth.get_access_token(code)
-    print(token_info['access_token'])
+
+    sp_oauth = get_sp_oauth()
+    token_info = sp_oauth.get_access_token(code, check_cache=False)
+    token = token_info['access_token']
+    sp = spotipy.Spotify(auth=token)
+    recently_played = sp.current_user_recently_played(limit=50)
+    return "<br/>".join(["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]])
 
 def get_auth_prompt_and_recent_tracks():
     if len(sys.argv) > 1:
