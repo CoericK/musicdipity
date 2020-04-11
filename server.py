@@ -7,6 +7,7 @@ from flask import (
     redirect,
     request,
     render_template,
+    send_from_directory,
     session,
 )
 from flask_redis import FlaskRedis
@@ -88,11 +89,16 @@ def welcome():
     username = session.get('username')
     token = str(redis_client.get("token:{}".format(username)))
     sp = spotipy.Spotify(auth=token)
-    print(token)
+    user = sp.current_user()
     recently_played = sp.current_user_recently_played(limit=50)
-    return "<br/>".join(["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]])
+    recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]]
+    return render_template("welcome.html", user=user, recently_played=recently_played_list)
 
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static/images/favicon'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
 # RICKY_TOKEN = os.environ['RICKY_TOKEN']
 # DAVID_TOKEN = os.environ['DAVID_TOKEN']
 

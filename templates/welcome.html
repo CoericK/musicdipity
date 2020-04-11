@@ -1,0 +1,15 @@
+{% extends '_layout.html' %}
+
+{% block title %}Welcome to MusicDipity{% endblock%}
+
+{% block content %}
+
+<h3>Welcome {{ user.display_name }}!</h3>
+
+Here's what you listened to most recently! Awesome!
+<ul>
+{% for track in recently_played %}
+    <li>{{track}}</li>
+{% endfor%}
+</ul>
+{% endblock %}
