@@ -24,10 +24,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+
+REDIS_URL = os.getenv("REDIS_URL")
 redis_client = FlaskRedis(app, decode_responses=True)
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-
 if not SECRET_KEY:
     raise ValueError("You must set a SECRET_KEY in .env")
 
