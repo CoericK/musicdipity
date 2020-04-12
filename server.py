@@ -21,13 +21,12 @@ import spotipy.util as util
 
 # See .env.example for required environment variables
 from dotenv import load_dotenv
-
 load_dotenv()
 
 app = Flask(__name__)
 
-REDIS_URL = os.getenv("REDIS_URL")
-print(REDIS_URL)
+app.config['REDIS_URL'] = os.getenv("REDIS_URL")
+
 redis_client = FlaskRedis(app, decode_responses=True)
 
 SECRET_KEY = os.getenv("SECRET_KEY")

@@ -21,4 +21,3 @@ the occurrence and development of events by chance in a happy or beneficial way 
 ### Sign up to try it:
 
 [https://rickyyean.typeform.com/to/cXU8E3](https://rickyyean.typeform.com/to/cXU8E3)
-
