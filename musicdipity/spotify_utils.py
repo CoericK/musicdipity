@@ -204,14 +204,14 @@ def save_user_recent_tracks_and_artists(username, tracks_with_play_info):
             track_map[track_id].update({
                 'art': track['album']['images'][0]['url']
             })
-
-    pipe = redis_client.pipeline()
-    pipe.zadd("recent_artists:{}".format(username), artist_last_played)
-    pipe.zadd("recent_tracks:{}".format(username), track_last_played)
-    for track_id, track in track_map.items():
-        pipe.hmset("track:{}".format(track_id), track)
-        pipe.expire(track_id, TRACK_AND_ARTIST_CACHE_PERIOD)
-    pipe.execute()
+    if artist_last_played and track_last_played:
+        pipe = redis_client.pipeline()
+        pipe.zadd("recent_artists:{}".format(username), artist_last_played)
+        pipe.zadd("recent_tracks:{}".format(username), track_last_played)
+        for track_id, track in track_map.items():
+            pipe.hmset("track:{}".format(track_id), track)
+            pipe.expire(track_id, TRACK_AND_ARTIST_CACHE_PERIOD)
+        pipe.execute()
 
 
 def get_user_last_day_played(username):

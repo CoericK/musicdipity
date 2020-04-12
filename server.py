@@ -100,7 +100,7 @@ def welcome():
         del session['username']
         return redirect('/oauth/')
     
-    recently_played = get_user_last_day_played(username)
+    recently_played = get_user_last_day_played(username)[:10]
 
     currently_playing = get_and_update_user_currently_playing(username)
     return render_template("welcome.html", user=user, recently_played=recently_played, currently_playing=currently_playing)
@@ -138,11 +138,11 @@ def text_reply():
     # TODO move this to a task
     other_user_info = get_user(user)
     if body.upper().strip() == 'Y':
-        resp.message("{} accepts your challenge. IT IS ON TILL THE BREAK OF DAWN. I will play the same song from both your Spotifys starting at the same time. Make sure your volume is on and NOT PEEKING AT THE TRACK NAME (Honor Code)! First person to text the correct answer to me wins!".format(other_user_info['display_name']))
+        resp.message("David Tran accepts your challenge. IT IS ON TILL THE BREAK OF DAWN. I will play the same song from both your Spotifys starting at the same time. Make sure your volume is on and NOT PEEKING AT THE TRACK NAME (Honor Code)! First person to text the correct answer to me wins!")
         resp.message("Okay, in 5...4...3....2...1... GO! 🎬")
         enqueue_song_game_for_users(user, other_user, artist_id)
     else:
-        resp.message("Some good news and some bad news. The good news is: THAT'S CORRECT! The bad news...{} beat you to the punch!".format(other_user_info['display_name']))
+        resp.message("Some good news and some bad news. The good news is: THAT'S CORRECT! The bad news...David Tran beat you to the punch!")
     return str(resp)
     # is user part of an ongoing game?
     # get the game and make sure it's not over

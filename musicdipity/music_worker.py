@@ -87,7 +87,7 @@ def create_musicdipity(users_arr=None):
             ago = humanize_ts(user_artist_last_played)
             user_info = get_user(user)
             other_user_info = get_user(other_username)
-            message = "{} just played {}. {} played {} {}".format(user_info['display_name'], artist_name, other_user_info['display_name'], artist_name, ago)
+            message = "David Tran just played {}. Ricky Yean played {} {}".format(artist_name, artist_name, ago)
             print(message)
             timestamp = int(time.time())
             user_last_alerted_key = "last_alerted:{}".format(user)
