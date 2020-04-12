@@ -9,9 +9,9 @@ q = Queue(connection=conn)
 
 sched = BlockingScheduler()
 
-@sched.scheduled_job('interval', minutes=3)
+@sched.scheduled_job('interval', minutes=1)
 def timed_job():
-    print('This job is run every three minutes.')
+    print('This job is run every minute.')
     result = q.enqueue(spawn_musicdipity_tasks)
 
 
