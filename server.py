@@ -1,29 +1,18 @@
-from collections import defaultdict
 import json
 import os
 import sys
-
-from flask import (
-    Flask,
-    redirect,
-    request,
-    render_template,
-    send_from_directory,
-    session,
-)
-from flask_redis import FlaskRedis
+from collections import defaultdict
 
 import spotipy
-from spotipy import (
-    is_token_expired,
-    SpotifyOAuth,
-
-)
-
 import spotipy.util as util
-
+from authy.api import AuthyApiClient
 # See .env.example for required environment variables
 from dotenv import load_dotenv
+from flask import (Flask, jsonify, redirect, render_template, request,
+                   send_from_directory, session)
+from flask_redis import FlaskRedis
+from spotipy import SpotifyOAuth, is_token_expired
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -37,6 +26,8 @@ if not SECRET_KEY:
     raise ValueError("You must set a SECRET_KEY in .env")
 
 app.secret_key = SECRET_KEY
+
+twilio_authy_api = AuthyApiClient(os.getenv("TWILIO_AUTHY_API_KEY"))
 
 SCOPE = "user-read-email,user-top-read,user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state,playlist-read-collaborative,playlist-modify-public"
 
@@ -139,14 +130,36 @@ def welcome():
     except spotipy.client.SpotifyException:
         del session['username']
         return redirect('/oauth/')
-    recently_played = sp.current_user_recently_played(limit=50)
+    recently_played = sp.current_user_recently_played(limit=5)
     recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]]
-    user_recent_artists = defaultdict(list)
-    for item in recently_played['items']:
-        user_recent_artists[item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
-
+    # user_recent_artists = defaultdict(list)
+    # for item in recently_played['items']:
+    #     user_recent_artists[item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
+    print(user)
     return render_template("welcome.html", user=user, recently_played=recently_played_list)
 
+@app.route("/phone-signup/", methods=["POST"])
+def phone_signup():
+    country_code = request.form.get("country_code")
+    phone_number = request.form.get("phone_number")
+
+    session['country_code'] = country_code
+    session['phone_number'] = phone_number
+
+
+@app.route('/phone-verify', methods=["POST"])
+def phone-verify():
+    token = request.form.get("token")
+
+    phone_number = session.get("phone_number")
+    country_code = session.get("country_code")
+
+    verification = api.phones.verification_check(phone_number,
+                                                    country_code,
+                                                    token)
+
+    if verification.ok():
+        return Response("<h1>Success!</h1>")
 
 @app.route('/favicon.ico')
 def favicon():
