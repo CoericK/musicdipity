@@ -3,6 +3,7 @@ import json
 import os
 import random
 import sys
+import time
 from collections import defaultdict
 from itertools import chain
 
@@ -16,7 +17,7 @@ from flask import (Flask, redirect, render_template, request,
 from flask_redis import FlaskRedis
 from spotipy import SpotifyOAuth, is_token_expired, SpotifyClientCredentials, SpotifyException
 
-from .exceptions import MusicdipityAuthError
+from .exceptions import MusicdipityAuthError, MusicdipityPlaybackError
 from .utils import humanize_ts
 load_dotenv()
 
@@ -142,10 +143,26 @@ def get_artist_for_id(artist_id, is_retry=False):
     return artist_info
 
 
-def get_user_currently_playing(username):
+def get_user_currently_playing_helper(username):
     sp = get_user_sp(username)
     currently_playing = sp.current_user_playing_track()
     if not currently_playing:
+        raise MusicdipityPlaybackError
+    return currently_playing
+
+
+def get_user_currently_playing(username):
+    try:
+        currently_playing = get_user_currently_playing_helper(username)
+    except  MusicdipityPlaybackError:
+        return None
+    return currently_playing['item']
+
+
+def get_and_update_user_currently_playing(username):
+    try:
+        currently_playing = sp.current_user_playing_track()
+    except  MusicdipityPlaybackError:
         return None
 
     timestamp = currently_playing['timestamp']
@@ -247,7 +264,7 @@ def get_random_song_by_artist(artist_id, country="US"):
 
 def enqueue_song_game_for_users(user1, user2, artist_id):
     sp1 = get_user_sp(user1)
-    sp2 = get_user_sp(user2)
+    #sp2 = get_user_sp(user2)
 
     song_uri = get_random_song_by_artist(artist_id)
     for user, sp in [(user1, sp1), (user2, sp2)]:
@@ -263,7 +280,19 @@ def enqueue_song_game_for_users(user1, user2, artist_id):
                 print("Couldn't start playback. bailing.")
                 print(e)
                 return False
-
-        sp.next_track()
-    # TODO skip to that song if user has songs queued
+        # skip to that song if user has songs queued
+        current_uri = get_user_currently_playing(user)['uri']
+        while current_uri != song_uri:
+            print(current_uri)
+            print(song_uri)
+            print("skipping another track")
+            sp.next_track()
+            current_uri = get_user_currently_playing(user)['uri']
+        
+        # If we play the game, we should make sure we don't send overlap alerts for the game itself...
+        # for now we'll just make sure not to text about overlaps for another 5 minutes + the cooldown
+        timestamp = int(time.time()) + 300
+        user_last_alerted_key = "last_alerted:{}".format(user)
+        print("Updating user last_alerted to 5 min in the future (plus the cooldown")
+        redis_client.set(user_last_alerted_key, timestamp)
 

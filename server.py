@@ -15,7 +15,7 @@ from spotipy import SpotifyOAuth, is_token_expired
 
 from musicdipity.exceptions import MusicdipityAuthError
 from musicdipity.spotify_utils import (get_sp_oauth, get_user_sp, get_user, get_existing_user_access_token,
-                                       get_user_last_day_played, get_user_currently_playing, 
+                                       get_user_last_day_played, get_and_update_user_currently_playing, 
                                        SCOPE)
 from musicdipity.utils import humanize_ts
 
@@ -99,7 +99,7 @@ def welcome():
     
     recently_played = get_user_last_day_played(username)
 
-    currently_playing = get_user_currently_playing(username)
+    currently_playing = get_and_update_user_currently_playing(username)
     return render_template("welcome.html", user=user, recently_played=recently_played, currently_playing=currently_playing)
 
 

@@ -53,7 +53,7 @@ def create_musicdipity(users_arr=None):
         user_artists[user] = set(redis_client.zrange("recent_artists:{}".format(user), 0, -1))
         print(user_artists[user])
 
-        currently_playing = get_user_currently_playing(user)
+        currently_playing = get_and_update_user_currently_playing(user)
         if not currently_playing:
             print("not playing anything")
             continue
@@ -109,7 +109,7 @@ def create_musicdipity(users_arr=None):
 
             # TODO 2020-04-12: Add a conditional branch if the other user is not currently listening to spotify
             # We have the logic for this, e.g.
-            # if get_user_currently_playing(other_username) is None
+            # if get_user_currently_playing(other_username) raises...
             game_message = "Since you're both Spotify right now, How about a quick game of 🥁 \"Name that {} Song?\" (Simply reply \"Y\" and I'll coordinate)".format(artist_name)
             game_gif = "https://media.giphy.com/media/gLKVCVdLUXMTeIs6MD/giphy.gif"
             send_sms(to_number=user_number, body=game_message, media_url=game_gif)
