@@ -26,7 +26,9 @@ pickleshare==0.7.5
 prompt-toolkit==3.0.5
 ptyprocess==0.6.0
 Pygments==2.6.1
+PyJWT==1.7.1
 python-dotenv==0.12.0
+pytz==2019.3
 redis==3.4.1
 regex==2020.4.4
 requests==2.23.0
@@ -35,6 +37,7 @@ six==1.14.0
 spotipy==2.10.0
 toml==0.10.0
 traitlets==4.3.3
+twilio==6.38.0
 typed-ast==1.4.1
 urllib3==1.25.8
 wcwidth==0.1.9

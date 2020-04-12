@@ -28,10 +28,43 @@ app.secret_key = SECRET_KEY
 
 SCOPE = "user-read-email,user-top-read,user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state,playlist-read-collaborative,playlist-modify-public"
 
+# TODO (2020-04-11) - Refactor: Refactor project into an module with helper files
 
+##############################################################################################
+# Exceptions
+##############################################################################################
 class MusicdipityAuthError(Exception):
     pass
 
+##############################################################################################
+# Twilio helpers
+##############################################################################################
+def get_twilio_client():
+    return Client(os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
+
+
+def send_sms(to_number, from_number, body, media_url=None):
+    """Using our caller's number and the number they called, send an SMS."""
+    client = get_twilio_client()
+    if media_url is None:
+        media_url = []
+    try:
+        client.messages.create(
+            body=body,
+            from_=from_number,
+            to=to_number,
+            media_url=media_url,
+        )
+    except TwilioRestException as exception:
+        # Check for invalid mobile number error from Twilio
+        if exception.code == 21614:
+            print("Uh oh, looks like this caller can't receive SMS messages.")
+
+
+
+##############################################################################################
+# Spotify helpers
+##############################################################################################
 def get_sp_oauth():
     client_id = os.getenv("SPOTIPY_CLIENT_ID")
     client_secret = os.getenv("SPOTIPY_CLIENT_SECRET")
@@ -74,6 +107,9 @@ def get_existing_user_access_token(username):
     return token_info["access_token"]
 
 
+##############################################################################################
+# Routes
+##############################################################################################
 @app.route("/", methods=["GET"])
 def index():
     return render_template('index.html')
@@ -140,28 +176,6 @@ def welcome():
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static/images/favicon'),
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
-# RICKY_TOKEN = os.environ['RICKY_TOKEN']
-# DAVID_TOKEN = os.environ['DAVID_TOKEN']
-
-# TOKENS = {
-#     'rickyyean': RICKY_TOKEN,
-#     'dtran320': DAVID_TOKEN,
-# }
-
-# user_recent_artists = {}
-
-# for user, token in TOKENS.items():
-#     sp = spotipy.Spotify(auth=token)
-#     recent = sp.current_user_recently_played(limit=50)
-#     user_recent_artists[user] = defaultdict(list)
-#     for item in recent['items']:
-#         user_recent_artists[user][item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
-
-# overlap = set(user_recent_artists['rickyyean'].keys()) & set(user_recent_artists['dtran320'].keys())
-
-# for artist in overlap:
-#     print(user_recent_artists['rickyyean'][artist])
-#     print(user_recent_artists['dtran320'][artist])
 
 
 if __name__ == "__main__":

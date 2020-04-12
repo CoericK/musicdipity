@@ -32,3 +32,27 @@ def get_auth_prompt_and_recent_tracks():
 
 
 get_auth_prompt_and_recent_tracks()
+
+
+# RICKY_TOKEN = os.environ['RICKY_TOKEN']
+# DAVID_TOKEN = os.environ['DAVID_TOKEN']
+
+# TOKENS = {
+#     'rickyyean': RICKY_TOKEN,
+#     'dtran320': DAVID_TOKEN,
+# }
+
+# user_recent_artists = {}
+
+# for user, token in TOKENS.items():
+#     sp = spotipy.Spotify(auth=token)
+#     recent = sp.current_user_recently_played(limit=50)
+#     user_recent_artists[user] = defaultdict(list)
+#     for item in recent['items']:
+#         user_recent_artists[user][item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
+
+# overlap = set(user_recent_artists['rickyyean'].keys()) & set(user_recent_artists['dtran320'].keys())
+
+# for artist in overlap:
+#     print(user_recent_artists['rickyyean'][artist])
+#     print(user_recent_artists['dtran320'][artist])

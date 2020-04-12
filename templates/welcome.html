@@ -5,7 +5,9 @@
 {% block content %}
 <div class="row">
     <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12">
-        <h3>Congrats, you successfully logged in with Spotify, {{ user.display_name }}! 🎉</h3>
+        <div class="alert alert-primary" role="alert">
+            Congrats, you successfully logged in with Spotify, {{ user.display_name }}! 🎉
+        </div>
 
         Here's what you listened to most recently. We think you have AWESOME taste 💯
         <ul>
