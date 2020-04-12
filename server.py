@@ -109,6 +109,14 @@ def favicon():
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
+@app.route('/text-reply/'):
+def text_reply():
+    sender = request.values.get('From')
+    body = request.values.get('Body')
+    print(request.values)
+    print("Got a text from sender: {}!".format(sender))
+    print(body)
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)

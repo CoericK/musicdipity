@@ -187,12 +187,11 @@ def save_user_recent_tracks_and_artists(username, tracks_with_play_info):
 
 
 def get_user_last_day_played(username):
-    token = get_existing_user_access_token(username)
     now = datetime.datetime.now()
     one_day_ago = now - datetime.timedelta(days=1)
     one_day_millis = int(get_millis_ts(one_day_ago))
 
-    sp = spotipy.Spotify(auth=token)
+    sp = get_user_sp(username)
     cursor = None
     items = []
 
@@ -219,3 +218,9 @@ def get_user_last_day_played(username):
  
     return items
  
+
+def_create_playlist_for_users(user1, user2):
+    sp1 = get_user_sp(user1)
+    sp2 = get_user_sp(user2)
+
+    
