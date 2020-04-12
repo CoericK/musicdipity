@@ -118,7 +118,7 @@ def get_datetime_from_millis_ts(millis_ts):
     return datetime.datetime.fromtimestamp(timestamp)
 
 
-def get_artist_for_id(artist_id):
+def get_artist_for_id(artist_id, is_retry=False):
     artist_json = redis_client.get(artist_id)
     if artist_json is None:
         sp = get_client_sp()
@@ -127,7 +127,16 @@ def get_artist_for_id(artist_id):
         artist_name = artist_info['name']
         redis_client.setex(name="artist:{}".format(artist_id), value=artist_json, time=TRACK_AND_ARTIST_CACHE_PERIOD)
     else:
-        artist_info = json.loads(artist_json)
+        try:
+            artist_info = json.loads(artist_json)
+        except:
+            if is_retry:
+                print("Bad artist data in cache after setting it, so bailing")
+                raise
+            print("Bad artist data in cache... clearing")
+            redis_client.delete(artist_id)
+            return get_artist_for_id(artist_id, is_retry=True)
+
     return artist_info
 
 

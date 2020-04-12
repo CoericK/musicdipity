@@ -109,7 +109,7 @@ def favicon():
                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 
-@app.route('/text-reply/'):
+@app.route('/text-reply/', methods=["POST"])
 def text_reply():
     sender = request.values.get('From')
     body = request.values.get('Body')
