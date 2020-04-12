@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import sys
@@ -14,8 +15,9 @@ from spotipy import SpotifyOAuth, is_token_expired
 
 from musicdipity.exceptions import MusicdipityAuthError
 from musicdipity.spotify_utils import (get_sp_oauth, get_existing_user_access_token,
-                                       get_user_last_day_played, get_user_current_playing, 
+                                       get_user_last_day_played, get_user_currently_playing, 
                                        SCOPE)
+from musicdipity.utils import humanize_ts
 
 load_dotenv()
 
@@ -31,31 +33,11 @@ if not SECRET_KEY:
 
 app.secret_key = SECRET_KEY
 
-# TODO (2020-04-11) - Refactor: Refactor into more helper files
-
 ##############################################################################################
-# Twilio helpers
+# Register Template Filters
 ##############################################################################################
-def get_twilio_client():
-    return Client(os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
 
-
-def send_sms(to_number, from_number, body, media_url=None):
-    """Using our caller's number and the number they called, send an SMS."""
-    client = get_twilio_client()
-    if media_url is None:
-        media_url = []
-    try:
-        client.messages.create(
-            body=body,
-            from_=from_number,
-            to=to_number,
-            media_url=media_url,
-        )
-    except TwilioRestException as exception:
-        # Check for invalid mobile number error from Twilio
-        if exception.code == 21614:
-            print("Uh oh, looks like this caller can't receive SMS messages.")
+app.jinja_env.filters['humanize'] = humanize_ts
 
 
 ##############################################################################################
@@ -115,14 +97,16 @@ def welcome():
         del session['username']
         return redirect('/oauth/')
     recently_played = get_user_last_day_played(username)
-    recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played]
-    current_playing = get_user_current_playing(username)
-    return render_template("welcome.html", user=user, recently_played=recently_played_list, current_playing=current_playing)
+
+    currently_playing = get_user_currently_playing(username)
+    return render_template("welcome.html", user=user, recently_played=recently_played, currently_playing=currently_playing)
 
 
 @app.route("/test/", methods=["GET"])
 def test():
-    get_user_recently_played("dtran320")
+    ricky_token = {"access_token": "BQCb2fYSgkdXFIAcFc-8t8HkBB_TTde3Eq_ysYjXYwqfJF0DKdqZLaixB3DPxgFe1c8IjMVQR_2jpBuYHHd_-HluTtsvgGdvsGypLoGl1pTStaRaS0JfVRmVXXtjbmOyNphBV5IDaCbsTEhOuvVZI13X03xFlTaYqMtZ", "token_type": "Bearer", "expires_in": 3600, "refresh_token": "AQA4iVaGmlsU7OPfGj5_UQ6yumCM15WWr1uhEgG2ELyuJx28txAIfDJVmwnJMD65Sh1eaudsJGDSWaz8_mcezwKZWLsm6N1yFSM-XDS1dECjEPJfsb-jSZSyPE-7UxkzD10", "scope": "user-read-email,user-top-read,user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state,playlist-read-collaborative,playlist-modify-public", "expires_at": 1586660179}
+    ricky_token_json = json.dumps(ricky_token)
+    redis_client.set("token:rickyyean", ricky_token_json)
 
 @app.route('/favicon.ico')
 def favicon():

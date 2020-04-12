@@ -5,14 +5,18 @@
 {% block content %}
 <div class="row">
     <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12">
-        <div class="alert alert-primary" role="alert">
+        <div class="alert alert-success" role="alert">
             Congrats, you successfully logged in with Spotify, {{ user.display_name }}! 🎉
         </div>
-
+        {% if currently_playing %}
+        <div class="alert alert-primary" role="alert">
+            Currently listening to 🎧🎶: {{currently_playing.artists.0.name}} - {{ currently_playing.name }}
+        </div>
+        {% endif %}
         Here's what you listened to most recently. We think you have AWESOME taste 💯
         <ul>
-        {% for track in recently_played %}
-            <li>{{track}}</li>
+        {% for track_info in recently_played %}
+            <li><a href="{{track_info.track.preview_url}}" target="_blank">{{track_info.track.artists.0.name}} - {{track_info.track.name}}</a> <i>{{track_info.played_at | humanize }}</i></li>
         {% endfor%}
         </ul>
     </div>

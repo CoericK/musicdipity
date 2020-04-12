@@ -12,16 +12,11 @@ from dotenv import load_dotenv
 from flask import (Flask, redirect, render_template, request,
                    send_from_directory, session)
 from flask_redis import FlaskRedis
-from spotipy import SpotifyOAuth, is_token_expired
+from spotipy import SpotifyOAuth, is_token_expired, SpotifyClientCredentials
 
 from .exceptions import MusicdipityAuthError
-
+from .utils import humanize_ts
 load_dotenv()
-
-from rq import Queue
-from worker import conn
-
-q = Queue(connection=conn)
 
 app = Flask(__name__)
 
@@ -60,6 +55,11 @@ def get_sp_oauth():
     )
     return sp_oauth
 
+def get_client_sp():
+    """ Returnour client credential. This can only be used to retrieve general info WITHOUT user-specific info."""
+    client_credentials_manager = SpotifyClientCredentials()
+    return spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+
 
 def get_existing_user_access_token(username):
     """Fetch token from Redis for existing user.
@@ -97,47 +97,40 @@ def get_datetime_from_millis_ts(millis_ts):
     timestamp = int(millis_ts) / 1000
     return datetime.datetime.fromtimestamp(timestamp)
 
+def get_artist_name_for_id(artist_id):
+    artist_name = redis_client.get(artist_id)
+    if artist_name is None:
+        sp = get_client_sp()
+        artist = sp.artist(artist_id)
+        artist_name = artist['name']
+        redis_client.setex(name="artist:{}".format(artist_id), value=artist_name, time=TRACK_AND_ARTIST_CACHE_PERIOD)
+    return artist_name
+
 def get_user_currently_playing(username):
     token = get_existing_user_access_token(username)
     sp = spotipy.Spotify(auth=token)
-    print(sp.current_user_playing_track())
+    currently_playing = sp.current_user_playing_track()
+    if not currently_playing:
+        return None
 
-def get_user_last_day_played(username):
-    token = get_existing_user_access_token(username)
-    now = datetime.datetime.now()
-    one_day_ago = now - datetime.timedelta(days=1)
-    one_day_millis = int(get_millis_ts(one_day_ago))
+    timestamp = currently_playing['timestamp']
 
-    sp = spotipy.Spotify(auth=token)
-    cursor = None
-    items = []
+    save_user_recent_tracks_and_artists(username, [{
+        'played_at': timestamp,
+        'track': currently_playing['item']
+    }])
 
-    # TODO (2020-04-12) - BUG: For reals, spent ~1 hour debugging this. The Spotify Web API
-    # Might just be broken here since paging doesn't appear to work, so we're just limited to 50 for now.
-    # https://developer.spotify.com/documentation/web-api/reference-beta/#endpoint-get-recently-played
-    while cursor is None or cursor > one_day_millis:
-        print("Cursor is ", cursor)
-        result = sp.current_user_recently_played(before=cursor,limit=50)
-        print("Got {} results".format(len(result['items'])))
-        if not result["items"]:
-            break
-        items.extend(result['items'])
-        print("Next results should be at {}".format(result['next']))
-        cursor = int(result['cursors']['before'])
-        print("Updated cursor to ", cursor)
+    return currently_playing['item']
 
-    print("Loaded {} tracks".format(len(items)))
-
+def save_user_recent_tracks_and_artists(username, tracks_with_play_info):
     artist_last_played = defaultdict(int)
     artist_map = {}
     
     track_last_played = defaultdict(int)
     track_map = {}
-
-    for item in items:
-        played_at = get_millis_ts(get_datetime_from_spotify_dt_str(item['played_at']))
-
-        track = item['track']
+    for track_info in tracks_with_play_info:
+        played_at = track_info['played_at']
+        track = track_info['track']
         artists = track['artists']
 
         for artist in artists:
@@ -165,30 +158,41 @@ def get_user_last_day_played(username):
     for track_id, track in track_map.items():
         pipe.hmset("track:{}".format(track_id), track)
         pipe.expire(track_id, TRACK_AND_ARTIST_CACHE_PERIOD)
-    for artist_id, artist in artist_map.items():
-        pipe.setex(name="artist:{}".format(artist_id), value=artist, time=TRACK_AND_ARTIST_CACHE_PERIOD)
+    for artist_id, artist_name in artist_map.items():
+        pipe.setex(name="artist:{}".format(artist_id), value=artist_name, time=TRACK_AND_ARTIST_CACHE_PERIOD)
     pipe.execute()
+
+
+def get_user_last_day_played(username):
+    token = get_existing_user_access_token(username)
+    now = datetime.datetime.now()
+    one_day_ago = now - datetime.timedelta(days=1)
+    one_day_millis = int(get_millis_ts(one_day_ago))
+
+    sp = spotipy.Spotify(auth=token)
+    cursor = None
+    items = []
+
+    # TODO (2020-04-12) - BUG: For reals, spent ~1 hour debugging this. The Spotify Web API
+    # Might just be broken here since paging doesn't appear to work, so we're just limited to 50 for now.
+    # https://developer.spotify.com/documentation/web-api/reference-beta/#endpoint-get-recently-played
+    while cursor is None or cursor > one_day_millis:
+        print("Cursor is ", cursor)
+        result = sp.current_user_recently_played(before=cursor,limit=50)
+        print("Got {} results".format(len(result['items'])))
+        if not result["items"]:
+            break
+        items.extend(result['items'])
+        print("Next results should be at {}".format(result['next']))
+        cursor = int(result['cursors']['before'])
+        print("Updated cursor to ", cursor)
+
+    print("Loaded {} tracks".format(len(items)))
+
+    for item in items:
+        item['played_at'] = get_millis_ts(get_datetime_from_spotify_dt_str(item['played_at']))
+
+    save_user_recent_tracks_and_artists(username, items)
  
     return items
  
-
-
-
-##############################################################################################
-# SERENDIPITY WORKERS
-##############################################################################################
-
-class MusicdipityWorkerError(Exception):
-    pass
-
-def create_musicdipity(users_arr=None):
-    if users_arr is None or not isinstance(users_arr, list) or not len(users_arr) > 1:
-        raise MusicdipityWorkerError("user_arrs should be a list of 2 or more usernames")
-    for user in users_arr:
-        print(user)
-
-def spawn_musicdipity_tasks():
-    """ Parent job to enqueue checking for musicdipities across all users."""
-    result = q.enqueue(create_musicdipity, ["dtran320", "rickyyean"])
-    print("Successfully enqueued task to check for musicdipity for ricky and david ")
-

@@ -3,7 +3,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from rq import Queue
 from worker import conn
 
-from musicdipity.spotify_utils import spawn_musicdipity_tasks
+from musicdipity.music_worker import spawn_musicdipity_tasks
 
 q = Queue(connection=conn)
 
