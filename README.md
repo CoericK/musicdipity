@@ -17,8 +17,8 @@ the occurrence and development of events by chance in a happy or beneficial way 
 
 ### Team members:
 
-- [David Tran](https://www.davidtran.me/)
-- [Ricky Yean](https://rickyyean.com/)
+- [David Tran](https://www.davidtran.me/) - All the coding! 👨🏻‍💻🧹
+- [Ricky Yean](https://rickyyean.com/) - Everything non-coding!
 
 ### Sign up to try it:
 
