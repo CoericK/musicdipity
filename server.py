@@ -132,7 +132,7 @@ def welcome():
         print(e)
         redis_client.delete("token:{}".format(username))
         del session['username']
-        redirect('/oauth/')
+        return redirect('/oauth/')
     sp = spotipy.Spotify(auth=token)
     try:
         user = sp.current_user()
@@ -141,6 +141,11 @@ def welcome():
         return redirect('/oauth/')
     recently_played = sp.current_user_recently_played(limit=50)
     recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]]
+    user_recent_artists = defaultdict(list)
+    for item in recent['items']:
+        print(item['track'])
+        user_recent_artists[item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
+
     return render_template("welcome.html", user=user, recently_played=recently_played_list)
 
 
