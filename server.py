@@ -103,12 +103,6 @@ def welcome():
     return render_template("welcome.html", user=user, recently_played=recently_played, currently_playing=currently_playing)
 
 
-@app.route("/test/", methods=["GET"])
-def test():
-    ricky_token = {"access_token": "BQCb2fYSgkdXFIAcFc-8t8HkBB_TTde3Eq_ysYjXYwqfJF0DKdqZLaixB3DPxgFe1c8IjMVQR_2jpBuYHHd_-HluTtsvgGdvsGypLoGl1pTStaRaS0JfVRmVXXtjbmOyNphBV5IDaCbsTEhOuvVZI13X03xFlTaYqMtZ", "token_type": "Bearer", "expires_in": 3600, "refresh_token": "AQA4iVaGmlsU7OPfGj5_UQ6yumCM15WWr1uhEgG2ELyuJx28txAIfDJVmwnJMD65Sh1eaudsJGDSWaz8_mcezwKZWLsm6N1yFSM-XDS1dECjEPJfsb-jSZSyPE-7UxkzD10", "scope": "user-read-email,user-top-read,user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state,playlist-read-collaborative,playlist-modify-public", "expires_at": 1586660179}
-    ricky_token_json = json.dumps(ricky_token)
-    redis_client.set("token:rickyyean", ricky_token_json)
-
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static/images/favicon'),
