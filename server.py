@@ -36,6 +36,7 @@ SCOPE = "user-read-email,user-top-read,user-library-read,user-read-recently-play
 class MusicdipityAuthError(Exception):
     pass
 
+
 ##############################################################################################
 # Twilio helpers
 ##############################################################################################
