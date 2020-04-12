@@ -1,15 +1,26 @@
 {% extends '_layout.html' %}
 
-{% block title %}Welcome to MusicDipity{% endblock%}
+{% block title %}Welcome to MusicDipity, {{user.display_name }}{% endblock%}
 
 {% block content %}
+<div class="row">
+    <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12">
+        <h3>Congrats, you successfully logged in with Spotify, {{ user.display_name }}! 🎉</h3>
 
-<h3>Welcome {{ user.display_name }}!</h3>
+        Here's what you listened to most recently. We think you have AWESOME taste 💯
+        <ul>
+        {% for track in recently_played %}
+            <li>{{track}}</li>
+        {% endfor%}
+        </ul>
+    </div>
+</div>
 
-Here's what you listened to most recently! Awesome!
-<ul>
-{% for track in recently_played %}
-    <li>{{track}}</li>
-{% endfor%}
-</ul>
+
+<div class="row">
+    <div class="col-sm-12 col-md-12 col-lg-12 col-xl-12">
+      <img class="img-fluid" src="{{ url_for('static', filename='images/hotlinebling.gif') }}" alt="Hotline Bling gif" title="Hotline Bling gif"/>
+    </div>
+</div>
+
 {% endblock %}

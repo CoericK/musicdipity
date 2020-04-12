@@ -89,7 +89,11 @@ def welcome():
     username = session.get('username')
     token = str(redis_client.get("token:{}".format(username)))
     sp = spotipy.Spotify(auth=token)
-    user = sp.current_user()
+    try:
+        user = sp.current_user()
+    except spotipy.client.SpotifyException:
+        del session['username']
+        return redirect('/oauth/')
     recently_played = sp.current_user_recently_played(limit=50)
     recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]]
     return render_template("welcome.html", user=user, recently_played=recently_played_list)
