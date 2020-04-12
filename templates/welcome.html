@@ -9,8 +9,8 @@
 
         Here's what you listened to most recently. We think you have AWESOME taste 💯
         <ul>
-        {% for track in recently_played %}
-            <li>{{track}}</li>
+        {% for item in recently_played %}
+            <li>{{item.track}}</li>
         {% endfor%}
         </ul>
     </div>

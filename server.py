@@ -38,6 +38,7 @@ if not SECRET_KEY:
 
 app.secret_key = SECRET_KEY
 
+# Ask for anything we might reasonably want for the duration of the hackathon project
 SCOPE = "user-read-email,user-top-read,user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state,playlist-read-collaborative,playlist-modify-public"
 
 
@@ -140,10 +141,14 @@ def welcome():
         del session['username']
         return redirect('/oauth/')
     recently_played = sp.current_user_recently_played(limit=50)
-    recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]]
-    user_recent_artists = defaultdict(list)
-    for item in recently_played['items']:
-        user_recent_artists[item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
+    recently_played_list = list(recently_played['items'])
+    user_recent_artists = set([item['track']['artists'][0]['name'] for item in recently_played_list])
+    print(recently_played_list[0]['track']['album'].keys())
+    print(recently_played_list[0]['track']['artists'][0].keys())
+    print(user_recent_artists)
+    # user_recent_artists = defaultdict(list)
+    # for item in recently_played['items']:
+    #     user_recent_artists[item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
 
     return render_template("welcome.html", user=user, recently_played=recently_played_list)
 
