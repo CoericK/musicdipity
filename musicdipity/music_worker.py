@@ -132,6 +132,6 @@ def create_musicdipity(users_arr=None):
 
 def spawn_musicdipity_tasks():
     """ Parent job to enqueue checking for musicdipities across all users."""
-    result = q.enqueue(create_musicdipity, ["dtran320", "rickyyean"])
+    result = q.enqueue(create_musicdipity, ["rickyyean", "dtran320"])
     print("Successfully enqueued task to check for musicdipity for ricky and david ")
 
