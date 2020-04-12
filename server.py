@@ -113,6 +113,7 @@ def oauth_callback():
     user = sp.current_user()
     username = user['id']
     if username:
+        print("Signed up new user {}! Storing token to Redis.".format(username))
         redis_client.set("token:{}".format(username), token_json)
         session['username'] = username
     else:
@@ -130,7 +131,6 @@ def welcome():
     except MusicdipityAuthError as e:
         print("Issue with token, let's reset and try again...")
         print(e)
-        redis_client.delete("token:{}".format(username))
         del session['username']
         return redirect('/oauth/')
     sp = spotipy.Spotify(auth=token)
@@ -142,7 +142,7 @@ def welcome():
     recently_played = sp.current_user_recently_played(limit=50)
     recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]]
     user_recent_artists = defaultdict(list)
-    for item in recent['items']:
+    for item in recently_played['items']:
         print(item['track'])
         user_recent_artists[item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
 
