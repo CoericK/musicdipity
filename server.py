@@ -38,7 +38,7 @@ if not SECRET_KEY:
 
 app.secret_key = SECRET_KEY
 
-SCOPE = "user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state"
+SCOPE = "user-read-email,user-top-read,user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state,playlist-read-collaborative,playlist-modify-public"
 
 
 class MusicdipityAuthError(Exception):
