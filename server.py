@@ -27,6 +27,7 @@ load_dotenv()
 app = Flask(__name__)
 
 REDIS_URL = os.getenv("REDIS_URL")
+print(REDIS_URL)
 redis_client = FlaskRedis(app, decode_responses=True)
 
 SECRET_KEY = os.getenv("SECRET_KEY")
