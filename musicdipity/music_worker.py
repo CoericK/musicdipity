@@ -78,7 +78,8 @@ def create_musicdipity(users_arr=None):
         if overlaps:
             # TODO 2020-04-12: Be more intelligent about which artist if the current song overlaps with several
             artist = overlaps.pop()
-            artist_name = get_artist_name_for_id(artist)
+            artist_info = get_artist_for_id(artist)
+            artist_name = artist_info['name']
             print("AHA! WE GOT AN OVERLAP for artist: {}".format(artist_name))
             other_username = artist_to_user_map[artist]
             user_artist_last_played = int(redis_client.zscore("recent_artists:{}".format(other_username), artist))
@@ -102,8 +103,10 @@ def create_musicdipity(users_arr=None):
             })
             user_number = os.getenv('DAVID_NUMBER')
             other_user_number = os.getenv('RICKY_NUMBER')
-            send_sms(to_number=user_number, body=message)
-            send_sms(to_number=other_user_number, body=message)
+            artist_image = artist_info['images'][0]['url'] if 'images' in artist_info and artist_info['images'] else None
+            print(artist_image)
+            #send_sms(to_number=user_number, body=message, media_url=artist_image)
+            #send_sms(to_number=other_user_number, body=message, media_url=artist_image)
 
 
 def spawn_musicdipity_tasks():

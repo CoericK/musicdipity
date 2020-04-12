@@ -103,7 +103,6 @@ def get_millis_ts(dt):
 
 def get_user(username):
     user_info_json = redis_client.get("user:{}".format(username))
-    print("get user")
     if not user_info_json:
         sp = get_user_sp(username)
         user_info = sp.current_user()
@@ -119,14 +118,17 @@ def get_datetime_from_millis_ts(millis_ts):
     return datetime.datetime.fromtimestamp(timestamp)
 
 
-def get_artist_name_for_id(artist_id):
-    artist_name = redis_client.get(artist_id)
-    if artist_name is None:
+def get_artist_for_id(artist_id):
+    artist_json = redis_client.get(artist_id)
+    if artist_json is None:
         sp = get_client_sp()
-        artist = sp.artist(artist_id)
-        artist_name = artist['name']
-        redis_client.setex(name="artist:{}".format(artist_id), value=artist_name, time=TRACK_AND_ARTIST_CACHE_PERIOD)
-    return artist_name
+        artist_info = sp.artist(artist_id)
+        artist_json = json.dumps(artist_info)
+        artist_name = artist_info['name']
+        redis_client.setex(name="artist:{}".format(artist_id), value=artist_json, time=TRACK_AND_ARTIST_CACHE_PERIOD)
+    else:
+        artist_info = json.loads(artist_json)
+    return artist_info
 
 
 def get_user_currently_playing(username):
@@ -181,8 +183,6 @@ def save_user_recent_tracks_and_artists(username, tracks_with_play_info):
     for track_id, track in track_map.items():
         pipe.hmset("track:{}".format(track_id), track)
         pipe.expire(track_id, TRACK_AND_ARTIST_CACHE_PERIOD)
-    for artist_id, artist_name in artist_map.items():
-        pipe.setex(name="artist:{}".format(artist_id), value=artist_name, time=TRACK_AND_ARTIST_CACHE_PERIOD)
     pipe.execute()
 
 
