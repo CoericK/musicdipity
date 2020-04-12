@@ -55,6 +55,7 @@ def get_sp_oauth():
     )
     return sp_oauth
 
+
 def get_client_sp():
     """ Returnour client credential. This can only be used to retrieve general info WITHOUT user-specific info."""
     client_credentials_manager = SpotifyClientCredentials()
@@ -86,16 +87,37 @@ def get_existing_user_access_token(username):
     return token_info["access_token"]
 
 
+def get_user_sp(username):
+    token = get_existing_user_access_token(username)
+    return spotipy.Spotify(auth=token)
+
+
 def get_datetime_from_spotify_dt_str(dt_str):
     return datetime.datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+
 
 def get_millis_ts(dt):
     epoch = datetime.datetime.utcfromtimestamp(0)
     return int((dt - epoch).total_seconds() * 1000)
 
+
+def get_user(username):
+    user_info_json = redis_client.get("user:{}".format(username))
+    print("get user")
+    if not user_info_json:
+        sp = get_user_sp(username)
+        user_info = sp.current_user()
+        user_info_json = json.dumps(user_info)
+        redis_client.set("user:{}".format(username), user_info_json)
+    else:
+        user_info = json.loads(user_info_json)
+    return user_info
+
+
 def get_datetime_from_millis_ts(millis_ts):
     timestamp = int(millis_ts) / 1000
     return datetime.datetime.fromtimestamp(timestamp)
+
 
 def get_artist_name_for_id(artist_id):
     artist_name = redis_client.get(artist_id)
@@ -106,9 +128,9 @@ def get_artist_name_for_id(artist_id):
         redis_client.setex(name="artist:{}".format(artist_id), value=artist_name, time=TRACK_AND_ARTIST_CACHE_PERIOD)
     return artist_name
 
+
 def get_user_currently_playing(username):
-    token = get_existing_user_access_token(username)
-    sp = spotipy.Spotify(auth=token)
+    sp = get_user_sp(username)
     currently_playing = sp.current_user_playing_track()
     if not currently_playing:
         return None
@@ -121,6 +143,7 @@ def get_user_currently_playing(username):
     }])
 
     return currently_playing['item']
+
 
 def save_user_recent_tracks_and_artists(username, tracks_with_play_info):
     artist_last_played = defaultdict(int)

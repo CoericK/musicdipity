@@ -1,4 +1,5 @@
 import datetime
+import time
 import json
 import os
 import sys
@@ -12,6 +13,7 @@ from spotipy import SpotifyOAuth, is_token_expired
 
 from .spotify_utils import *
 from .exceptions import MusicdipityAuthError
+from twilio_utils import send_sms
 from .utils import humanize_ts
 load_dotenv()
 
@@ -35,6 +37,8 @@ app.secret_key = SECRET_KEY
 ##############################################################################################
 # MUSIC SERENDIPITY WORKERS
 ##############################################################################################
+
+TEXT_COOLDOWN = int(os.getenv('TEXT_COOLDOWN', 300))
 
 class MusicdipityWorkerError(Exception):
     pass
@@ -74,15 +78,32 @@ def create_musicdipity(users_arr=None):
         if overlaps:
             # TODO 2020-04-12: Be more intelligent about which artist if the current song overlaps with several
             artist = overlaps.pop()
-            print(artist)
             artist_name = get_artist_name_for_id(artist)
-            print(artist_name)
             print("AHA! WE GOT AN OVERLAP for artist: {}".format(artist_name))
-            username = artist_to_user_map[artist]
-            user_artist_last_played = int(redis_client.zscore("recent_artists:{}".format(username), artist))
-            print(user_artist_last_played)
+            other_username = artist_to_user_map[artist]
+            user_artist_last_played = int(redis_client.zscore("recent_artists:{}".format(other_username), artist))
             ago = humanize_ts(user_artist_last_played)
-            print("You just played {}. {} played {} {}".format(artist_name, username, artist_name, ago))
+            user_info = get_user(user)
+            other_user_info = get_user(other_username)
+            message = "{} just played {}. {} played {} {}".format(user_info['display_name'], artist_name, other_user_info['display_name'], artist_name, ago)
+            print(message)
+            timestamp = int(time.time())
+            user_last_alerted_key = "last_alerted:{}".format(user)
+            other_user_last_alerted_key = "last_alerted:{}".format(other_username)
+            last_messaged = [int(l) for l in redis_client.mget([user_last_alerted_key, other_user_last_alerted_key])]
+            for ts in last_messaged:
+                if ts > timestamp - TEXT_COOLDOWN:
+                    print("Not going to alert users because of recent serendipity.")
+                    return
+            print("OKAY TO MESSAGE!")
+            redis_client.mset({
+                user_last_alerted_key: timestamp,
+                other_user_last_alerted_key: timestamp,
+            })
+            user_number = os.getenv('DAVID_NUMBER')
+            other_user_number = os.getenv('RICKY_NUMBER')
+            send_sms(to_number=user_number, body=message)
+            send_sms(to_number=other_user_number, body=message)
 
 
 def spawn_musicdipity_tasks():

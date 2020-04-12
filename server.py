@@ -14,7 +14,7 @@ from flask_redis import FlaskRedis
 from spotipy import SpotifyOAuth, is_token_expired
 
 from musicdipity.exceptions import MusicdipityAuthError
-from musicdipity.spotify_utils import (get_sp_oauth, get_existing_user_access_token,
+from musicdipity.spotify_utils import (get_sp_oauth, get_user_sp, get_user, get_existing_user_access_token,
                                        get_user_last_day_played, get_user_currently_playing, 
                                        SCOPE)
 from musicdipity.utils import humanize_ts
@@ -84,18 +84,19 @@ def welcome():
         redirect('/index/')
     username = session.get('username')
     try:
-        token = get_existing_user_access_token(username)
+        sp = get_user_sp()
     except MusicdipityAuthError as e:
         print("Issue with token, let's reset and try again...")
         print(e)
         del session['username']
         return redirect('/oauth/')
-    sp = spotipy.Spotify(auth=token)
+
     try:
-        user = sp.current_user()
+        user = get_user(username)
     except spotipy.client.SpotifyException:
         del session['username']
         return redirect('/oauth/')
+    
     recently_played = get_user_last_day_played(username)
 
     currently_playing = get_user_currently_playing(username)
