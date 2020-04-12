@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from flask_redis import FlaskRedis
 from spotipy import SpotifyOAuth, is_token_expired
 
+# TODO Don't * import
 from .spotify_utils import *
 from .exceptions import MusicdipityAuthError
 from twilio_utils import send_sms
@@ -91,18 +92,24 @@ def create_musicdipity(users_arr=None):
             timestamp = int(time.time())
             user_last_alerted_key = "last_alerted:{}".format(user)
             other_user_last_alerted_key = "last_alerted:{}".format(other_username)
-            last_messaged = [int(l) for l in redis_client.mget([user_last_alerted_key, other_user_last_alerted_key])]
-            for ts in last_messaged:
-                if ts > timestamp - TEXT_COOLDOWN:
-                    print("Not going to alert users because of recent serendipity.")
-                    return
+            try:
+                last_messaged = [int(l) for l in redis_client.mget([user_last_alerted_key, other_user_last_alerted_key])]
+                for ts in last_messaged:
+                    if ts > timestamp - TEXT_COOLDOWN:
+                        print("Not going to alert users because of recent serendipity.")
+                        return
+            except:
+                pass
             print("OKAY TO MESSAGE!")
             redis_client.mset({
                 user_last_alerted_key: timestamp,
                 other_user_last_alerted_key: timestamp,
             })
-            user_number = os.getenv('DAVID_NUMBER')
-            other_user_number = os.getenv('RICKY_NUMBER')
+            user_number = get_phone_number_for_user(user)
+            other_user_number = get_phone_number_for_user(other_username)
+            print(user_number)
+            print(other_user_number)
+    
             artist_image = artist_info['images'][0]['url'] if 'images' in artist_info and artist_info['images'] else None
             send_sms(to_number=user_number, body=message, media_url=artist_image)
             send_sms(to_number=other_user_number, body=message, media_url=artist_image)
@@ -114,7 +121,14 @@ def create_musicdipity(users_arr=None):
             game_gif = "https://media.giphy.com/media/gLKVCVdLUXMTeIs6MD/giphy.gif"
             send_sms(to_number=user_number, body=game_message, media_url=game_gif)
             send_sms(to_number=other_user_number, body=game_message, media_url=game_gif)
-            
+
+            game_key = 'game:{}'.format(user)
+            other_game_key = 'game:{}'.format(other_username)
+
+            redis_client.mset({
+                game_key: "{}||{}".format(other_username, artist_info['id']),
+                other_game_key: "{}||{}".format(user, artist_info['id'])
+            })
 
 def spawn_musicdipity_tasks():
     """ Parent job to enqueue checking for musicdipities across all users."""

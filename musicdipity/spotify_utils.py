@@ -161,7 +161,7 @@ def get_user_currently_playing(username):
 
 def get_and_update_user_currently_playing(username):
     try:
-        currently_playing = sp.current_user_playing_track()
+        currently_playing = get_user_currently_playing_helper(username)
     except  MusicdipityPlaybackError:
         return None
 
@@ -246,6 +246,13 @@ def get_user_last_day_played(username):
  
     return items
 
+# Not technically a spotify util but mapping spotify to phone numbers
+def get_phone_number_for_user(user):
+    return redis_client.get("number:{}".format(user))
+
+
+def get_user_for_phone_number(phone_number):
+    return redis_client.get("number-to-user:{}".format(phone_number))
 
 def check_fuzzy_match_song_name(guess, canonical):
     return canonical.lower() == guess.lower()
@@ -255,20 +262,18 @@ def check_fuzzy_match_song_name(guess, canonical):
 def get_random_song_by_artist(artist_id, country="US"):
     sp = get_client_sp()
     top_tracks = sp.artist_top_tracks(artist_id, country=country)['tracks']
-    top_track_uris = [t['uri'] for t in top_tracks]
-    weighted_list = [[t['uri']] * (100 - t['popularity']) for t in top_tracks]
+    weighted_list = [[(t['uri'], t['name'])] * (100 - t['popularity']) for t in top_tracks]
     # Return a random choice but weighted towards the LESS popular of the top tracks
     top_tracks_weighted = list(chain.from_iterable(weighted_list))
     return random.choice(top_tracks_weighted)
 
 
 def enqueue_song_game_for_users(user1, user2, artist_id):
-    sp1 = get_user_sp(user1)
-    #sp2 = get_user_sp(user2)
+    song_uri, song_name = get_random_song_by_artist(artist_id)
 
-    song_uri = get_random_song_by_artist(artist_id)
-    for user, sp in [(user1, sp1), (user2, sp2)]:
-
+    for user in [user1, user2]:
+        sp = get_user_sp(user)
+        phone_number = get_phone_number_for_user(user)
         try:
             sp.add_to_queue(song_uri)
         except SpotifyException as e:
@@ -282,17 +287,28 @@ def enqueue_song_game_for_users(user1, user2, artist_id):
                 return False
         # skip to that song if user has songs queued
         current_uri = get_user_currently_playing(user)['uri']
+        # bail after 20 songs (something must have gone wrong?)
+        counter = 0
         while current_uri != song_uri:
             print(current_uri)
             print(song_uri)
             print("skipping another track")
             sp.next_track()
             current_uri = get_user_currently_playing(user)['uri']
+            counter += 1
+            if counter >= 20:
+                break
+        
+        number_key = 'answer:{}'.format(phone_number)
+        redis_client.set(number_key, song_name)
         
         # If we play the game, we should make sure we don't send overlap alerts for the game itself...
         # for now we'll just make sure not to text about overlaps for another 5 minutes + the cooldown
-        timestamp = int(time.time()) + 300
+        timestamp = int(time.time())
+        okay_to_alert = timestamp + 300
         user_last_alerted_key = "last_alerted:{}".format(user)
         print("Updating user last_alerted to 5 min in the future (plus the cooldown")
-        redis_client.set(user_last_alerted_key, timestamp)
+        redis_client.set(user_last_alerted_key, okay_to_alert)
+
+
 
