@@ -130,3 +130,6 @@ dmypy.json
 
 # Spotipy cache
 .cache-*
+
+# redis
+dump.rdb

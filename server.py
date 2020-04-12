@@ -1,4 +1,5 @@
 from collections import defaultdict
+import json
 import os
 import sys
 
@@ -14,7 +15,9 @@ from flask_redis import FlaskRedis
 
 import spotipy
 from spotipy import (
+    is_token_expired,
     SpotifyOAuth,
+
 )
 
 import spotipy.util as util
@@ -38,6 +41,9 @@ app.secret_key = SECRET_KEY
 SCOPE = "user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state"
 
 
+class MusicdipityAuthError(Exception):
+    pass
+
 def get_sp_oauth():
     client_id = os.getenv("SPOTIPY_CLIENT_ID")
     client_secret = os.getenv("SPOTIPY_CLIENT_SECRET")
@@ -53,6 +59,32 @@ def get_sp_oauth():
         scope=SCOPE
     )
     return sp_oauth
+
+
+def get_existing_user_access_token(username):
+    """Fetch token from Redis for existing user.
+
+    If the access token is not yet expired, we'll return that.
+    If it is, we'll refresh the token, update the access token and return that.
+    """
+    token_info_json = redis_client.get("token:{}".format(username))
+    if not token_info_json:
+        raise MusicdipityAuthError("Tried to get token for unknown user {}".format(username))
+    try:
+        token_info = json.loads(token_info_json)
+    except:
+        raise MusicdipityAuthError("Badly formatted token for user {}".format(username))
+    if is_token_expired(token_info):
+        sp_oauth = get_sp_oauth()
+        token_info = sp_oauth.refresh_access_token(
+            token_info["refresh_token"]
+        )
+        print("Refreshed user access token")
+        token_json = json.dumps(token_info)
+        redis_client.set("token:{}".format(username), token_json)
+
+    return token_info["access_token"]
+
 
 @app.route("/", methods=["GET"])
 def index():
@@ -72,13 +104,19 @@ def oauth():
 def oauth_callback():
     code = request.values.get("code")
     sp_oauth = get_sp_oauth()
+    # TODO (2020-04-11) Deprecation warning: we won't be able to get this as a dict soon)
+    # https://github.com/plamere/spotipy/blob/master/spotipy/oauth2.py#L133
     token_info = sp_oauth.get_access_token(code, check_cache=False)
+    token_json = json.dumps(token_info)
     token = token_info['access_token']
     sp = spotipy.Spotify(auth=token)
     user = sp.current_user()
     username = user['id']
-    redis_client.set("token:{}".format(username), token)
-    session['username'] = username
+    if username:
+        redis_client.set("token:{}".format(username), token_json)
+        session['username'] = username
+    else:
+        raise Exception
     return redirect("/welcome/")
     
 
@@ -87,7 +125,14 @@ def welcome():
     if 'username' not in session:
         redirect('/index/')
     username = session.get('username')
-    token = str(redis_client.get("token:{}".format(username)))
+    try:
+        token = get_existing_user_access_token(username)
+    except MusicdipityAuthError as e:
+        print("Issue with token, let's reset and try again...")
+        print(e)
+        redis_client.delete("token:{}".format(username))
+        del session['username']
+        redirect('/oauth/')
     sp = spotipy.Spotify(auth=token)
     try:
         user = sp.current_user()
