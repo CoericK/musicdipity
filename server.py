@@ -1,29 +1,17 @@
-from collections import defaultdict
 import json
 import os
 import sys
-
-from flask import (
-    Flask,
-    redirect,
-    request,
-    render_template,
-    send_from_directory,
-    session,
-)
-from flask_redis import FlaskRedis
+from collections import defaultdict
 
 import spotipy
-from spotipy import (
-    is_token_expired,
-    SpotifyOAuth,
-
-)
-
 import spotipy.util as util
-
 # See .env.example for required environment variables
 from dotenv import load_dotenv
+from flask import (Flask, redirect, render_template, request,
+                   send_from_directory, session)
+from flask_redis import FlaskRedis
+from spotipy import SpotifyOAuth, is_token_expired
+
 load_dotenv()
 
 app = Flask(__name__)
