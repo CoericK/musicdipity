@@ -1,8 +1,10 @@
 import datetime
 import json
 import os
+import random
 import sys
 from collections import defaultdict
+from itertools import chain
 
 import spotipy
 import spotipy.util as util
@@ -12,7 +14,7 @@ from dotenv import load_dotenv
 from flask import (Flask, redirect, render_template, request,
                    send_from_directory, session)
 from flask_redis import FlaskRedis
-from spotipy import SpotifyOAuth, is_token_expired, SpotifyClientCredentials
+from spotipy import SpotifyOAuth, is_token_expired, SpotifyClientCredentials, SpotifyException
 
 from .exceptions import MusicdipityAuthError
 from .utils import humanize_ts
@@ -230,3 +232,38 @@ def get_user_last_day_played(username):
 
 def check_fuzzy_match_song_name(guess, canonical):
     return canonical.lower() == guess.lower()
+
+
+# TODO 2020-04-12: Read users' countries!
+def get_random_song_by_artist(artist_id, country="US"):
+    sp = get_client_sp()
+    top_tracks = sp.artist_top_tracks(artist_id, country=country)['tracks']
+    top_track_uris = [t['uri'] for t in top_tracks]
+    weighted_list = [[t['uri']] * (100 - t['popularity']) for t in top_tracks]
+    # Return a random choice but weighted towards the LESS popular of the top tracks
+    top_tracks_weighted = list(chain.from_iterable(weighted_list))
+    return random.choice(top_tracks_weighted)
+
+
+def enqueue_song_game_for_users(user1, user2, artist_id):
+    sp1 = get_user_sp(user1)
+    sp2 = get_user_sp(user2)
+
+    song_uri = get_random_song_by_artist(artist_id)
+    for user, sp in [(user1, sp1), (user2, sp2)]:
+
+        try:
+            sp.add_to_queue(song_uri)
+        except SpotifyException as e:
+            print("Couldn't queue song for user {}. Trying to start playback.".format(user))
+            print(e)
+            try:
+                sp.start_playback()
+            except SpotifyException as e:
+                print("Couldn't start playback. bailing.")
+                print(e)
+                return False
+
+        sp.next_track()
+    # TODO skip to that song if user has songs queued
+

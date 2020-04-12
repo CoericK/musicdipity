@@ -111,8 +111,9 @@ def create_musicdipity(users_arr=None):
             # We have the logic for this, e.g.
             # if get_user_currently_playing(other_username) is None
             game_message = "Since you're both Spotify right now, How about a quick game of 🥁 \"Name that {} Song?\" (Simply reply \"Y\" and I'll coordinate)".format(artist_name)
-            send_sms(to_number=user_number, body=game_message, media_url="https://media.giphy.com/media/JZppEh6ryXH5S/giphy.gif")
-            send_sms(to_number=other_user_number, body=game_message, media_url="https://media.giphy.com/media/JZppEh6ryXH5S/giphy.gif")
+            game_gif = "https://media.giphy.com/media/gLKVCVdLUXMTeIs6MD/giphy.gif"
+            send_sms(to_number=user_number, body=game_message, media_url=game_gif)
+            send_sms(to_number=other_user_number, body=game_message, media_url=game_gif)
             
 
 def spawn_musicdipity_tasks():
