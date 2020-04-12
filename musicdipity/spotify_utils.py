@@ -17,6 +17,11 @@ from .exceptions import MusicdipityAuthError
 
 load_dotenv()
 
+from rq import Queue
+from worker import conn
+
+q = Queue(connection=conn)
+
 app = Flask(__name__)
 
 app.config['REDIS_URL'] = os.getenv("REDIS_URL")
@@ -77,5 +82,21 @@ def get_existing_user_access_token(username):
     return token_info["access_token"]
 
 
-def test_worker():
-    print("FOO CALLED TEST_WORKER")
+##############################################################################################
+# SERENDIPITY WORKERS
+##############################################################################################
+
+class MusicdipityWorkerError(Exception):
+    pass
+
+def create_musicdipity(users_arr=None):
+    if users_arr is None or not isinstance(users_arr, list) or not len(users_arr) > 1:
+        raise MusicdipityWorkerError("user_arrs should be a list of 2 or more usernames")
+    for user in users_arr:
+        print(user)
+
+def spawn_musicdipity_tasks():
+    """ Parent job to enqueue checking for musicdipities across all users."""
+    result = q.enqueue(create_musicdipity, ["dtran320", "rickyyean"])
+    print("Successfully enqueued task to check for musicdipity for ricky and david ")
+

@@ -3,7 +3,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from rq import Queue
 from worker import conn
 
-from musicdipity.spotify_utils import test_worker
+from musicdipity.spotify_utils import spawn_musicdipity_tasks
 
 q = Queue(connection=conn)
 
@@ -12,7 +12,7 @@ sched = BlockingScheduler()
 @sched.scheduled_job('interval', minutes=3)
 def timed_job():
     print('This job is run every three minutes.')
-    result = q.enqueue(test_worker)
+    result = q.enqueue(spawn_musicdipity_tasks)
 
 
 sched.start()
