@@ -104,10 +104,16 @@ def create_musicdipity(users_arr=None):
             user_number = os.getenv('DAVID_NUMBER')
             other_user_number = os.getenv('RICKY_NUMBER')
             artist_image = artist_info['images'][0]['url'] if 'images' in artist_info and artist_info['images'] else None
-            print(artist_image)
-            #send_sms(to_number=user_number, body=message, media_url=artist_image)
-            #send_sms(to_number=other_user_number, body=message, media_url=artist_image)
+            send_sms(to_number=user_number, body=message, media_url=artist_image)
+            send_sms(to_number=other_user_number, body=message, media_url=artist_image)
 
+            # TODO 2020-04-12: Add a conditional branch if the other user is not currently listening to spotify
+            # We have the logic for this, e.g.
+            # if get_user_currently_playing(other_username) is None
+            game_message = "Since you're both Spotify right now, How about a quick game of 🥁 \"Name that {} Song?\t (Simply reply \"Y\" and I'll coordinate)")
+            send_sms(to_number=user_number, body=game_message, media_url="https://media.giphy.com/media/JZppEh6ryXH5S/giphy.gif"")
+            send_sms(to_number=other_user_number, body=game_message, media_url="https://media.giphy.com/media/JZppEh6ryXH5S/giphy.gif"")
+            
 
 def spawn_musicdipity_tasks():
     """ Parent job to enqueue checking for musicdipities across all users."""

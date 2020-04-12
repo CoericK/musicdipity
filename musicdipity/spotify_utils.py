@@ -217,10 +217,7 @@ def get_user_last_day_played(username):
     save_user_recent_tracks_and_artists(username, items)
  
     return items
- 
 
-def_create_playlist_for_users(user1, user2):
-    sp1 = get_user_sp(user1)
-    sp2 = get_user_sp(user2)
 
-    
+def check_fuzzy_match_song_name(guess, canonical):
+    return canonical.lower() == guess.lower()
