@@ -287,17 +287,19 @@ def enqueue_song_game_for_users(user1, user2, artist_id):
                 return False
         # skip to that song if user has songs queued
         current_uri = get_user_currently_playing(user)['uri']
+        sp.next_track()
+        # for some reason this goes nuts sometimes
         # bail after 20 songs (something must have gone wrong?)
-        counter = 0
-        while current_uri != song_uri:
-            print(current_uri)
-            print(song_uri)
-            print("skipping another track")
-            sp.next_track()
-            current_uri = get_user_currently_playing(user)['uri']
-            counter += 1
-            if counter >= 20:
-                break
+        # counter = 0
+        # while current_uri != song_uri:
+        #     print(current_uri)
+        #     print(song_uri)
+        #     print("skipping another track")
+        #     sp.next_track()
+        #     current_uri = get_user_currently_playing(user)['uri']
+        #     counter += 1
+        #     if counter >= 20:
+        #         break
         
         number_key = 'answer:{}'.format(phone_number)
         redis_client.set(number_key, song_name)
