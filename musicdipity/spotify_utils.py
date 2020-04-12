@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import sys
@@ -80,6 +81,79 @@ def get_existing_user_access_token(username):
         redis_client.set("token:{}".format(username), token_json)
 
     return token_info["access_token"]
+
+
+def get_datetime_from_spotify_dt_str(dt_str):
+    return datetime.datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+
+def get_millis_ts(dt):
+    epoch = datetime.datetime.utcfromtimestamp(0)
+    return int((dt - epoch).total_seconds() * 1000)
+
+def get_datetime_from_millis_ts(millis_ts):
+    timestamp = int(millis_ts) / 1000
+    return datetime.datetime.fromtimestamp(timestamp)
+
+def get_user_currently_playing(username):
+    token = get_existing_user_access_token(username)
+    sp = spotipy.Spotify(auth=token)
+    print(sp.current_user_playing_track())
+
+def get_user_last_day_played(username):
+    token = get_existing_user_access_token(username)
+    now = datetime.datetime.now()
+    one_day_ago = now - datetime.timedelta(days=1)
+    one_day_millis = int(get_millis_ts(one_day_ago))
+
+    sp = spotipy.Spotify(auth=token)
+    cursor = None
+    items = []
+    while cursor is None or cursor > one_day_millis:
+        print("Cursor is ", cursor)
+        result = sp.current_user_recently_played(before=cursor,limit=50)
+        print("got {} results".format(len(result['items'])))
+        items.extend(result['items'])
+
+        print(result['next'])
+
+        cursor = int(result['cursors']['before'])
+        print("Updated cursor to ", cursor)
+
+    print("Loaded {} tracks".format(len(items)))
+
+    artist_ids = []
+    artist_map = {}
+    
+    track_ids = []
+    track_map = {}
+
+    for item in items:
+        played_at = get_millis_ts(get_datetime_from_spotify_dt_str(item['played_at']))
+
+        track = item['track']
+        artists = track['artists']
+
+        for artist in artists:
+            artist_ids.append(artist['id'])
+            artist_map[artist['id']] = artist['name']
+
+        track_ids.append(track['id'])
+        track_map[track['id']] = {
+            'name': track['name'],
+            'artist': track['artists'][0]['name'],
+        }
+        if 'album' in track and 'images' in track['album'] and track['album']['images']:
+            track_map[track['id']].update({
+                'art': track['album']['images'][0]['url']
+            })
+
+    print(track_ids)
+    print(track_map)
+
+    print(artist_ids)
+    print(artist_map)
+ 
+
 
 
 ##############################################################################################

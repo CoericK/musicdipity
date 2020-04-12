@@ -13,7 +13,8 @@ from flask_redis import FlaskRedis
 from spotipy import SpotifyOAuth, is_token_expired
 
 from musicdipity.exceptions import MusicdipityAuthError
-from musicdipity.spotify_utils import (get_sp_oauth, get_existing_user_access_token)
+from musicdipity.spotify_utils import (get_sp_oauth, get_existing_user_access_token,
+                                       get_user_recently_played)
 
 load_dotenv()
 
@@ -123,6 +124,10 @@ def welcome():
 
     return render_template("welcome.html", user=user, recently_played=recently_played_list)
 
+
+@app.route("/test/", methods=["GET"])
+def test():
+    get_user_recently_played("dtran320")
 
 @app.route('/favicon.ico')
 def favicon():
