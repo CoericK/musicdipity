@@ -14,7 +14,8 @@ from spotipy import SpotifyOAuth, is_token_expired
 
 from musicdipity.exceptions import MusicdipityAuthError
 from musicdipity.spotify_utils import (get_sp_oauth, get_existing_user_access_token,
-                                       get_user_recently_played)
+                                       get_user_last_day_played, get_user_current_playing, 
+                                       SCOPE)
 
 load_dotenv()
 
@@ -30,10 +31,7 @@ if not SECRET_KEY:
 
 app.secret_key = SECRET_KEY
 
-SCOPE = "user-read-email,user-top-read,user-library-read,user-read-recently-played,user-read-playback-position,user-read-currently-playing,user-modify-playback-state,playlist-read-collaborative,playlist-modify-public"
-
-# TODO (2020-04-11) - Refactor: Refactor project into an module with helper files
-
+# TODO (2020-04-11) - Refactor: Refactor into more helper files
 
 ##############################################################################################
 # Twilio helpers
@@ -116,13 +114,10 @@ def welcome():
     except spotipy.client.SpotifyException:
         del session['username']
         return redirect('/oauth/')
-    recently_played = sp.current_user_recently_played(limit=50)
-    recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played["items"]]
-    user_recent_artists = defaultdict(list)
-    for item in recently_played['items']:
-        user_recent_artists[item['track']['artists'][0]['name']].append(item['played_at'] + ': ' + item['track']['name'])
-
-    return render_template("welcome.html", user=user, recently_played=recently_played_list)
+    recently_played = get_user_last_day_played(username)
+    recently_played_list = ["{} - {}: {}".format(item["track"]["artists"][0]["name"], item["track"]["name"], item["played_at"]) for item in recently_played]
+    current_playing = get_user_current_playing(username)
+    return render_template("welcome.html", user=user, recently_played=recently_played_list, current_playing=current_playing)
 
 
 @app.route("/test/", methods=["GET"])
