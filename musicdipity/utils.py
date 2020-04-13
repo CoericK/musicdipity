@@ -1,4 +1,26 @@
 import datetime
+import os
+
+from flask import Flask
+
+from flask_redis import FlaskRedis
+# See .env.example for required environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+app = Flask(__name__)
+
+app.config['REDIS_URL'] = os.getenv("REDIS_URL")
+
+redis_client = FlaskRedis(app, decode_responses=True)
+
+def get_all_users():
+    # TODO 2020-04-13: CAREFUL Don't run this when we have lots of keys/users
+    authed_users = redis_client.keys('user:*')
+    pipe = redis_client.pipeline()
+    for user_key in authed_users:
+        user = pipe.get(user_key)
+        print("{} - {}".format(user['display_name'], user['email'] if 'email' in user else 'No email'))
 
 
 # Borrowed from https://shubhamjain.co/til/how-to-render-human-readable-time-in-jinja/
